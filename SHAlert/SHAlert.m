@@ -11,12 +11,12 @@
 //Not used
 static dispatch_queue_t alertVcIsReadyQueue(void)
 {
-	static dispatch_once_t onceToken;
-	static dispatch_queue_t backgroundQueue = nil;
-	dispatch_once(&onceToken, ^{
-		backgroundQueue = dispatch_queue_create("com.seivanheidari.alertVcIsReadyQueue", DISPATCH_QUEUE_CONCURRENT);
-	});
-	return backgroundQueue;
+  static dispatch_once_t onceToken;
+  static dispatch_queue_t backgroundQueue = nil;
+  dispatch_once(&onceToken, ^{
+    backgroundQueue = dispatch_queue_create("com.seivanheidari.alertVcIsReadyQueue", DISPATCH_QUEUE_CONCURRENT);
+  });
+  return backgroundQueue;
 }
 
 
@@ -28,6 +28,7 @@ typedef void(^SHAlertReadyBlock)();
 
 @property(nonatomic,strong) IBOutlet UIButton * btnDestructive;
 @property(nonatomic,strong) IBOutlet UIButton * btnCancel;
+@property(nonatomic,strong) IBOutletCollection(UIView) NSArray * actionOutlets;
 @property(nonatomic,strong) IBOutlet NSSet    * setOfActionButtons;
 
 @property(nonatomic,strong) IBOutlet UILabel  * lblTitle;
@@ -77,50 +78,19 @@ typedef void(^SHAlertReadyBlock)();
   NSLog(@"%@", self.view.constraints);
 
 }
+
 //Not used
 -(void)prepareForAlert:(SHAlertReadyBlock)theReadyBlock; {
   dispatch_async(alertVcIsReadyQueue(), ^{
-//		dispatch_semaphore_wait(self.semaphore, DISPATCH_TIME_FOREVER);
-		dispatch_async(dispatch_get_main_queue(), ^{
+
+    dispatch_async(dispatch_get_main_queue(), ^{
       theReadyBlock();
-//      dispatch_semaphore_signal(self.semaphore);
     });
-	});
-
+  });
 }
--(BOOL)isStyle:(NSString *)theStyle onView:(UIView *)theView; {
-  NSAssert(theStyle, @"Must pass a style");
-  NSAssert(theView, @"Must pass a view");
-  BOOL doesSetupOutletStyleClass = NO;
-  NSString * styleClass = [theView performSelector:@selector(styleClass)];
-  if([styleClass isEqualToString:theStyle])
-    doesSetupOutletStyleClass = YES;
 
-
-
-  return doesSetupOutletStyleClass;
-
-}
 -(void)setup; {
-  NSMutableSet * actionButtons = [NSMutableSet set];
-  if([self.view respondsToSelector:@selector(setStyleClass:)])
-    [self.setOfOutlets enumerateObjectsUsingBlock:^(UIView * obj, NSUInteger _idx, BOOL *_stop) {
-      if([self isStyle:@"alert-background" onView:obj])
-        self.viewAlertBackground = obj;
-      else if([self isStyle:@"title" onView:obj])
-        self.lblTitle = (UILabel*)obj;
-      else if([self isStyle:@"message" onView:obj])
-        self.lblMessage = (UILabel*)obj;
-      else if([self isStyle:@"cancel" onView:obj])
-        self.btnCancel = (UIButton *)obj;
-      else if([self isStyle:@"destructive" onView:obj])
-        self.btnDestructive = (UIButton *)obj;
-      else if([self isStyle:@"action" onView:obj])
-        [actionButtons addObject:obj];
-
-    }];
-  self.setOfActionButtons = actionButtons.copy;
-
+    self.setOfActionButtons = [NSSet setWithArray:self.actionOutlets];
 }
 
 -(void)setButtonTitleForCancel:(NSString *)theTitle withBlock:(SHAlertButtonTappedBlock)theBlock; {
@@ -140,7 +110,6 @@ typedef void(^SHAlertReadyBlock)();
   [set removeObject:button];
   self.setOfActionButtons = set.copy;
 }
-
 
 -(void)setButtonTitleForButton:(UIButton *)theButton withTitle:(NSString *)theTitle
                      withBlock:(SHAlertButtonTappedBlock)theBlock; {
@@ -312,8 +281,6 @@ typedef void(^SHAlertReadyBlock)();
 
   UIViewController * vc = [storyboard instantiateViewControllerWithIdentifier:storyboardId];
   SHViewControllerAlert * vcAlert = (SHViewControllerAlert *)vc;
-  if([vcAlert.view respondsToSelector:@selector(setStyleId:)])
-    [vcAlert.view performSelector:@selector(setStyleId:) withObject:storyboardId];
 
   vcAlert.lblTitle.text   = theTitle;
   vcAlert.lblMessage.text = theMessage;
@@ -330,9 +297,6 @@ typedef void(^SHAlertReadyBlock)();
   //  UIStoryboard * sb = [UIStoryboard storyboardWithName:@"MainStoryboard_iPhone" bundle:nil];
   //  UIViewController * vc = [sb instantiateViewControllerWithIdentifier:storyBoardVcName];
   SHViewControllerAlert * vcAlert = [[SHViewControllerAlert alloc] init];
-
-  if([vcAlert.view respondsToSelector:@selector(setStyleId:)])
-    [vcAlert.view performSelector:@selector(setStyleId:) withObject:alertName];
 
   vcAlert.lblTitle.text   = theTitle;
   vcAlert.lblMessage.text = theMessage;
@@ -365,10 +329,6 @@ typedef void(^SHAlertReadyBlock)();
   self.currentAlertVc = self.setOfOrderedAlerts.lastObject;
 
 }
-
-
-
-
 
 @end
 
