@@ -8,20 +8,6 @@
 
 #import "SHAlert.h"
 
-//Not used
-static dispatch_queue_t alertVcIsReadyQueue(void)
-{
-  static dispatch_once_t onceToken;
-  static dispatch_queue_t backgroundQueue = nil;
-  dispatch_once(&onceToken, ^{
-    backgroundQueue = dispatch_queue_create("com.seivanheidari.alertVcIsReadyQueue", DISPATCH_QUEUE_CONCURRENT);
-  });
-  return backgroundQueue;
-}
-
-
-
-
 @interface SHViewControllerAlert ()
 typedef void(^SHAlertReadyBlock)();
 @property(nonatomic,strong) IBOutletCollection(UIView) NSArray * setOfOutlets;
@@ -39,7 +25,7 @@ typedef void(^SHAlertReadyBlock)();
 
 @property(nonatomic,setter=setTitleText:)   NSString * titleText;
 @property(nonatomic,setter=setMessageText:) NSString * messageText;
--(void)prepareForAlert:(SHAlertReadyBlock)theReadyBlock;
+
 -(void)setButtonTitleForButton:(UIButton *)theButton withTitle:(NSString *)theTitle
                      withBlock:(SHAlertButtonTappedBlock)theBlock;
 
@@ -50,44 +36,6 @@ typedef void(^SHAlertReadyBlock)();
 @end
 
 @implementation SHViewControllerAlert
-//Not done
--(void)setupDefaultAlert; {
-  self.view.backgroundColor = [UIColor lightGrayColor];
-  self.view.alpha = 0.5;
-
-  self.viewAlertBackground = UIView.new;
-
-  self.lblTitle            = UILabel.new;
-  self.lblTitle.textAlignment = NSTextAlignmentCenter;
-  self.lblTitle.numberOfLines = 1;
-  self.lblMessage          = UILabel.new;
-  self.lblMessage.textAlignment = NSTextAlignmentCenter;
-  self.lblMessage.numberOfLines = 0;
-
-  self.viewAlertBackground.backgroundColor = UIColor.redColor;
-
-  //  [self.view setTranslatesAutoresizingMaskIntoConstraints:NO];
-  [self.viewAlertBackground setTranslatesAutoresizingMaskIntoConstraints:NO];
-  [self.lblTitle setTranslatesAutoresizingMaskIntoConstraints:NO];
-  [self.lblMessage setTranslatesAutoresizingMaskIntoConstraints:NO];
-
-
-  [self.view addSubview:self.viewAlertBackground];
-  [self.viewAlertBackground addSubview:self.lblTitle];
-  [self.viewAlertBackground addSubview:self.lblMessage];
-  NSLog(@"%@", self.view.constraints);
-
-}
-
-//Not used
--(void)prepareForAlert:(SHAlertReadyBlock)theReadyBlock; {
-  dispatch_async(alertVcIsReadyQueue(), ^{
-
-    dispatch_async(dispatch_get_main_queue(), ^{
-      theReadyBlock();
-    });
-  });
-}
 
 -(void)setup; {
     self.setOfActionButtons = [NSSet setWithArray:self.actionOutlets];
@@ -114,10 +62,9 @@ typedef void(^SHAlertReadyBlock)();
 -(void)setButtonTitleForButton:(UIButton *)theButton withTitle:(NSString *)theTitle
                      withBlock:(SHAlertButtonTappedBlock)theBlock; {
 
-  //  [self prepareForAlert:^{
-
-  if(theTitle == nil)
+  if(theTitle == nil) {
     theTitle = [theButton titleForState:UIControlStateNormal];
+  }
 
   NSAssert(theTitle, @"Must pass a title");
   NSAssert1(theButton, @"Must pass a button for title %@", theTitle);
@@ -126,37 +73,17 @@ typedef void(^SHAlertReadyBlock)();
   self.buttonsWithBlocks = buttonsWithBlocks.copy;
   [theButton setTitle:theTitle forState:UIControlStateNormal];
   [theButton addTarget:self action:@selector(buttonTapped:) forControlEvents:UIControlEventTouchUpInside];
-
-  //  }];
-
-
-}
-
-
-
--(void)loadView; {
-  [super loadView];
-
-  //dispatch_semaphore_signal(self.semaphore);
-
-}
--(void)viewWillAppear:(BOOL)animated; {
-  [super viewWillAppear:animated];
-  if([self.viewAlertBackground respondsToSelector:@selector(updateStyles)])
-    [self.viewAlertBackground performSelector:@selector(updateStyles)];
 }
 
 -(void)viewDidLoad; {
   [super viewDidLoad];
   self.buttonsWithBlocks = @{};
-  //self.semaphore = dispatch_semaphore_create(0);
-  if(self.view.subviews.count < 1)
+
+  if(self.view.subviews.count < 1) {
     [self setupDefaultAlert];
-  else
+  } else {
     [self setup];
-
-
-
+  }
 }
 
 
@@ -167,14 +94,6 @@ typedef void(^SHAlertReadyBlock)();
   SHAlertButtonTappedBlock block = self.buttonsWithBlocks[buttonTitle];
   if(block) block(theTappedButton);
   [self dismiss];
-
-  //  if(block == nil)
-  //    [self dismiss];
-  //  else if (block(theTappedButton)) [self dismiss];
-  //  else {
-  //    [self show];
-  //  }
-
 }
 
 
@@ -188,7 +107,6 @@ typedef void(^SHAlertReadyBlock)();
   } completion:^(BOOL finished) {
     [self.delegate didShowAlert:self];
   }];
-
 }
 
 -(void)dismiss; {
@@ -199,26 +117,15 @@ typedef void(^SHAlertReadyBlock)();
     [self.view removeFromSuperview];
     [self.delegate didDismissAlert:self];
   }];
-
 }
 
 
 -(void)setTitleText:(NSString *)textTitle; {
-  //  [self prepareForAlert:^{
   self.lblTitle.text = textTitle;
-
-
-  //  }];
 }
 
 -(void)setMessageText:(NSString *)textMessage; {
-  //  [self prepareForAlert:^{
   self.lblMessage.text = textMessage;
-
-
-
-  //  }];
-
 }
 @end
 
@@ -272,6 +179,7 @@ typedef void(^SHAlertReadyBlock)();
 +(void)registerStoryBoard:(UIStoryboard *)theStoryBoard; {
   SHAlert.sharedManager.currentStoryboard = theStoryBoard;
 }
+
 +(SHViewControllerAlert *)alertControllerWithStoryboardId:(NSString *)storyboardId withTitle:(NSString *)theTitle andMessage:(NSString *)theMessage; {
 
   UIStoryboard * storyboard =  SHAlert.sharedManager.currentStoryboard;
@@ -280,13 +188,13 @@ typedef void(^SHAlertReadyBlock)();
   NSAssert(storyboard, @"Must specify storyboard");
 
   UIViewController * vc = [storyboard instantiateViewControllerWithIdentifier:storyboardId];
+    vc.view;
   SHViewControllerAlert * vcAlert = (SHViewControllerAlert *)vc;
 
-  vcAlert.lblTitle.text   = theTitle;
-  vcAlert.lblMessage.text = theMessage;
+  [vcAlert setTitleText:theTitle];
+  [vcAlert setMessageText:theMessage];
   vcAlert.delegate = SHAlert.sharedManager;
   [SHAlert.sharedManager addAlert:vcAlert];
-
 
   return vcAlert;
 }
@@ -294,19 +202,16 @@ typedef void(^SHAlertReadyBlock)();
 +(SHViewControllerAlert *)alertName:(NSString *)alertName withTitle:(NSString *)theTitle
                          andMessage:(NSString *)theMessage; {
   NSAssert(alertName, @"Must specify alert name");
-  //  UIStoryboard * sb = [UIStoryboard storyboardWithName:@"MainStoryboard_iPhone" bundle:nil];
-  //  UIViewController * vc = [sb instantiateViewControllerWithIdentifier:storyBoardVcName];
   SHViewControllerAlert * vcAlert = [[SHViewControllerAlert alloc] init];
 
-  vcAlert.lblTitle.text   = theTitle;
-  vcAlert.lblMessage.text = theMessage;
+  [vcAlert setTitleText:theTitle];
+  [vcAlert setMessageText:theMessage];
   vcAlert.delegate = SHAlert.sharedManager;
   [SHAlert.sharedManager addAlert:vcAlert];
 
 
   return vcAlert;
 }
-
 
 -(void)willShowAlert:(SHViewControllerAlert *)theAlert; {
   NSAssert(theAlert, @"Must have an alert");
